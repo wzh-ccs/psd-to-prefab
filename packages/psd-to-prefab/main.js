@@ -65,43 +65,51 @@ module.exports = {
           }
 
           // 用 layerNames（PSD图层名）作为 key，和 prefab-builder 匹配
-          // 直接读 PNG 的 .meta 文件获取 SpriteFrame 子资源的压缩 UUID
+          // 从 PNG 的 .meta 文件获取 UUID，然后压缩为 Cocos Creator 2.4.x 格式
           exportedAssets.layerNames.forEach((layerName, index) => {
             const filePath = exportedAssets.filePaths[index];
             const metaPath = filePath + '.meta';
-            let sfUuid = null;
+            let rawUuid = null;
 
             try {
               if (Fs.existsSync(metaPath)) {
                 const metaContent = JSON.parse(Fs.readFileSync(metaPath, 'utf-8'));
-                // meta 文件中有 subMetas，里面包含 SpriteFrame 的 UUID
+                // 优先从 subMetas 中获取 SpriteFrame 子资源 UUID
                 if (metaContent.subMetas) {
                   const keys = Object.keys(metaContent.subMetas);
                   if (keys.length > 0) {
-                    sfUuid = metaContent.subMetas[keys[0]].uuid;
+                    rawUuid = metaContent.subMetas[keys[0]].uuid;
                   }
                 }
-                // 如果没有 subMetas，直接用顶层 uuid
-                if (!sfUuid && metaContent.uuid) {
-                  sfUuid = metaContent.uuid;
+                if (!rawUuid && metaContent.uuid) {
+                  rawUuid = metaContent.uuid;
                 }
               }
             } catch (e) {
               Editor.warn(`[psd-to-prefab] 读取 meta 失败: ${layerName} - ${e.message}`);
             }
 
-            // 如果 meta 文件没读到，尝试用 assetdb API
-            if (!sfUuid) {
+            // 回退到 assetdb API
+            if (!rawUuid) {
               const fileName = exportedAssets.fileNames[index];
               const textureUrl = `${texturesDbUrl}/${fileName}`;
               try {
-                sfUuid = Editor.assetdb.urlToUuid(textureUrl);
+                rawUuid = Editor.assetdb.urlToUuid(textureUrl);
               } catch (e) {}
             }
 
-            if (sfUuid) {
-              uuidMap[layerName] = sfUuid;
-              Editor.log(`[psd-to-prefab] ${layerName} → ${sfUuid}`);
+            if (rawUuid) {
+              // 关键：将标准 UUID（36字符）压缩为 Cocos Creator 2.4.x 格式（22字符 base64）
+              let compressedUuid = rawUuid;
+              try {
+                if (Editor.Utils && Editor.Utils.UuidUtils) {
+                  compressedUuid = Editor.Utils.UuidUtils.compressUuid(rawUuid, true);
+                }
+              } catch (e) {
+                Editor.warn(`[psd-to-prefab] UUID 压缩失败: ${e.message}`);
+              }
+              uuidMap[layerName] = compressedUuid;
+              Editor.log(`[psd-to-prefab] ${layerName} → ${compressedUuid}`);
             } else {
               uuidMap[layerName] = UuidUtils.generate();
               Editor.warn(`[psd-to-prefab] ${layerName} UUID 未找到，使用随机值`);
