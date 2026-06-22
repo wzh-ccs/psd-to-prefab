@@ -49,18 +49,25 @@ module.exports = {
 
         // 步骤3: 刷新 AssetDB，让编辑器自动生成 .meta 文件
         Editor.log('[psd-to-prefab] 步骤3: 刷新资源数据库...');
-        // 计算 textures 目录的 db:// URL
-        const texturesRelPath = Path.relative(outputPath, exportDir).split(Path.sep).join('/');
-        const dbUrl = `db://assets/${texturesRelPath}`;
-
-        Editor.assetdb.refresh(dbUrl, () => {
+        // 直接刷新整个 assets 目录，避免路径计算错误
+        Editor.assetdb.refresh('db://assets', () => {
           Editor.log('[psd-to-prefab] 资源刷新完成，查询 UUID...');
 
           // 步骤4: 查询每张图的 SpriteFrame UUID
           const uuidMap = {};
+          // 构建 textures 目录的 db:// URL 用于查询 UUID
+          // 找到 assets 目录在 outputPath 中的位置来计算相对路径
+          const assetsIndex = exportDir.indexOf('/assets/');
+          let texturesDbUrl;
+          if (assetsIndex >= 0) {
+            texturesDbUrl = 'db://' + exportDir.substring(assetsIndex + 1);
+          } else {
+            texturesDbUrl = 'db://assets/' + psdName + '/textures';
+          }
+
           exportedAssets.fileNames.forEach((fileName, index) => {
             const layerName = Path.basename(fileName, '.png');
-            const textureUrl = `${dbUrl}/${fileName}`;
+            const textureUrl = `${texturesDbUrl}/${fileName}`;
             const uuid = Editor.assetdb.urlToUuid(textureUrl);
             if (uuid) {
               uuidMap[layerName] = uuid;
@@ -91,10 +98,8 @@ module.exports = {
           }
           Fs.writeFileSync(prefabPath, JSON.stringify(prefabJson, null, 2));
 
-          // 步骤7: 刷新 prefab 所在目录让编辑器导入
-          const prefabRelPath = Path.relative(outputPath, prefabDir).split(Path.sep).join('/');
-          const prefabDbUrl = `db://assets/${prefabRelPath}`;
-          Editor.assetdb.refresh(prefabDbUrl, () => {
+          // 步骤7: 刷新整个 assets 目录让编辑器导入 Prefab
+          Editor.assetdb.refresh('db://assets', () => {
             Editor.success(`[psd-to-prefab] ✅ 转换完成! 共 ${exportedAssets.count} 个图层`);
             event.reply(null, {
               success: true,
