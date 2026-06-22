@@ -56,7 +56,6 @@ module.exports = {
           // 步骤4: 查询每张图的 SpriteFrame UUID
           const uuidMap = {};
           // 构建 textures 目录的 db:// URL 用于查询 UUID
-          // 找到 assets 目录在 outputPath 中的位置来计算相对路径
           const assetsIndex = exportDir.indexOf('/assets/');
           let texturesDbUrl;
           if (assetsIndex >= 0) {
@@ -65,8 +64,9 @@ module.exports = {
             texturesDbUrl = 'db://assets/' + psdName + '/textures';
           }
 
-          exportedAssets.fileNames.forEach((fileName, index) => {
-            const layerName = Path.basename(fileName, '.png');
+          // 用 layerNames（PSD图层名）作为 key，和 prefab-builder 匹配
+          exportedAssets.layerNames.forEach((layerName, index) => {
+            const fileName = exportedAssets.fileNames[index];
             const textureUrl = `${texturesDbUrl}/${fileName}`;
             const uuid = Editor.assetdb.urlToUuid(textureUrl);
             if (uuid) {
@@ -74,6 +74,7 @@ module.exports = {
               Editor.log(`[psd-to-prefab] ${layerName} → ${uuid}`);
             } else {
               uuidMap[layerName] = UuidUtils.generate();
+              Editor.warn(`[psd-to-prefab] ${layerName} UUID 未找到，使用随机值`);
             }
           });
 

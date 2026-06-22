@@ -21,7 +21,6 @@ class ImageExporter {
    * @returns {object} { filePaths, fileNames, dbUrls, count }
    */
   static exportLayers(psdTree, outputDir, document) {
-    // 确保输出目录存在
     if (!Fs.existsSync(outputDir)) {
       Fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -29,51 +28,51 @@ class ImageExporter {
     const result = {
       filePaths: [],
       fileNames: [],
-      dbUrls: [],
+      layerNames: [],  // 图层名（用于 UUID 映射的 key）
       count: 0
     };
 
+    // 用于处理重名的计数器
+    this._nameCounter = {};
+
     // 递归导出所有图层
-    this._exportNode(psdTree.root, psdTree._psd, outputDir, document, result, '');
+    this._exportNode(psdTree.root, psdTree._psd, outputDir, document, result);
 
     return result;
   }
 
   /**
    * 递归导出单个节点及其子节点
+   * 文件名直接用图层名，重名时加序号后缀
    */
-  static _exportNode(node, psd, outputDir, document, result, pathPrefix) {
-    // 跳过不可见图层
+  static _exportNode(node, psd, outputDir, document, result) {
     if (!node.visible) return;
 
-    // 为每个图层生成 PNG
-    // 只有 type === 'layer' 的才导出图像
-    // type === 'group' 的是文件夹，不导出图像但递归处理子节点
     if (node.type === 'layer') {
       const safeName = this._sanitizeFileName(node.name);
-      const fileName = pathPrefix ? `${pathPrefix}_${safeName}.png` : `${safeName}.png`;
-      const filePath = Path.join(outputDir, fileName);
+      // 处理重名：如果同名已存在，加序号后缀
+      let fileName = `${safeName}.png`;
+      if (this._nameCounter[safeName]) {
+        this._nameCounter[safeName]++;
+        fileName = `${safeName}_${this._nameCounter[safeName]}.png`;
+      } else {
+        this._nameCounter[safeName] = 0;
+      }
 
-      // 使用 psd.js 的图层图像导出
+      const filePath = Path.join(outputDir, fileName);
       this._exportLayerImage(node, psd, filePath);
 
       result.filePaths.push(filePath);
       result.fileNames.push(fileName);
-      // 构建 db:// URL（在 Cocos Creator 插件环境中使用）
-      const dbUrlBase = Path.basename(outputDir);
-      result.dbUrls.push(
-        `db://assets/psd-imports/${dbUrlBase}/${fileName}`
-      );
+      // 关键：layerNames 存的是 PSD 图层名，用于和 prefab-builder 的 uuidMap key 匹配
+      result.layerNames.push(node.name);
       result.count++;
     }
 
     // 递归处理子节点
     if (node.children) {
       node.children.forEach(child => {
-        const childPrefix = pathPrefix
-          ? `${pathPrefix}_${this._sanitizeFileName(node.name)}`
-          : this._sanitizeFileName(node.name);
-        this._exportNode(child, psd, outputDir, document, result, childPrefix);
+        this._exportNode(child, psd, outputDir, document, result);
       });
     }
   }

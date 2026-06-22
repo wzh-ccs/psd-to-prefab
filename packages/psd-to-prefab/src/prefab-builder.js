@@ -103,11 +103,12 @@ class PrefabBuilder {
 
   /**
    * 构建 cc.Node（严格按照 2.4.11 格式）
+   * 关键：所有节点统一用 (0,0) 锚点计算坐标，避免居中锚点导致坐标错乱
+   * 如果用户选了居中锚点，在 _anchorPoint 字段设置，但坐标不额外偏移
    */
   static _buildNode(name, coords, parentIndex, options) {
     const x = coords.x;
     const y = coords.y;
-    const opacity = options.preserveOpacity ? 255 : 255;
 
     const node = {
       "__type__": "cc.Node",
@@ -117,8 +118,8 @@ class PrefabBuilder {
       "_children": [],
       "_active": true,
       "_components": [],
-      "_prefab": null, // 后处理填充
-      "_opacity": opacity,
+      "_prefab": null,
+      "_opacity": 255,
       "_color": {
         "__type__": "cc.Color",
         "r": 255,
@@ -128,8 +129,8 @@ class PrefabBuilder {
       },
       "_contentSize": {
         "__type__": "cc.Size",
-        "width": options.autoSize ? coords.contentSize.width : 0,
-        "height": options.autoSize ? coords.contentSize.height : 0
+        "width": options.autoSize ? (coords.contentSize.width || 0) : 0,
+        "height": options.autoSize ? (coords.contentSize.height || 0) : 0
       },
       "_anchorPoint": {
         "__type__": "cc.Vec2",

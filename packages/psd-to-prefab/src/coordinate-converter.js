@@ -27,7 +27,7 @@ class CoordinateConverter {
    * @returns {object} { x, y, anchorPoint, contentSize }
    */
   static convertLayer(layer, psdHeight, parentLayer = null, options = {}) {
-    const centerAnchor = options.centerAnchor !== false;  // 默认居中
+    const centerAnchor = options.centerAnchor !== false;
 
     const width = layer.width || (layer.right - layer.left) || 0;
     const height = layer.height || (layer.bottom - layer.top) || 0;
@@ -41,30 +41,30 @@ class CoordinateConverter {
       relativeTop -= (parentLayer.top || 0);
     }
 
-    // 转换为 Cocos 坐标
     // Y 轴翻转：Cocos 的 Y 轴向上，PSD 的 Y 轴向下
     const parentHeight = parentLayer
       ? (parentLayer.height || (parentLayer.bottom - parentLayer.top) || psdHeight)
       : psdHeight;
 
-    // PSD top 距离 → Cocos Y 坐标
-    // Cocos Y = (父高度 - top - 高度) = 从底部算起的位置
-    const cocosY = parentHeight - relativeTop - height;
+    // 统一计算节点左下角在 Cocos 坐标系中的位置
+    // 不管锚点是什么，_trs 中的 x,y 都是节点锚点在父节点坐标系中的位置
+    // 当锚点为 (0,0) 时，x,y = 左下角位置
+    // 当锚点为 (0.5,0.5) 时，x,y = 左下角 + 半宽半高
+    const bottomY = parentHeight - relativeTop - height;
 
     if (centerAnchor) {
-      // 锚点居中：(0.5, 0.5)
-      // 节点位置 = 图层左上角 + 半宽半高
+      // 锚点居中：x,y = 左下角 + 半宽半高
       return {
         x: relativeLeft + width / 2,
-        y: cocosY + height / 2,
+        y: bottomY + height / 2,
         anchorPoint: { x: 0.5, y: 0.5 },
         contentSize: { width, height }
       };
     } else {
-      // 锚点在左下角：(0, 0)
+      // 锚点左下角：x,y = 左下角
       return {
         x: relativeLeft,
-        y: cocosY,
+        y: bottomY,
         anchorPoint: { x: 0, y: 0 },
         contentSize: { width, height }
       };
