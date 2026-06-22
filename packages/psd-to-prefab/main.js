@@ -49,7 +49,9 @@ module.exports = {
 
         // 步骤3: 刷新 AssetDB，让编辑器自动生成 .meta 文件
         Editor.log('[psd-to-prefab] 步骤3: 刷新资源数据库...');
-        const dbUrl = `db://assets/${Path.relative(outputPath, exportDir).split(Path.sep).join('/')}`;
+        // 计算 textures 目录的 db:// URL
+        const texturesRelPath = Path.relative(outputPath, exportDir).split(Path.sep).join('/');
+        const dbUrl = `db://assets/${texturesRelPath}`;
 
         Editor.assetdb.refresh(dbUrl, () => {
           Editor.log('[psd-to-prefab] 资源刷新完成，查询 UUID...');
@@ -59,13 +61,11 @@ module.exports = {
           exportedAssets.fileNames.forEach((fileName, index) => {
             const layerName = Path.basename(fileName, '.png');
             const textureUrl = `${dbUrl}/${fileName}`;
-            // urlToUuid 返回纹理的 UUID，SpriteFrame 子资源 UUID 可以直接用纹理 UUID
             const uuid = Editor.assetdb.urlToUuid(textureUrl);
             if (uuid) {
               uuidMap[layerName] = uuid;
               Editor.log(`[psd-to-prefab] ${layerName} → ${uuid}`);
             } else {
-              // 用纹理 UUID 作为 SpriteFrame UUID（Cocos Creator 中 SpriteFrame 是纹理的子资源）
               uuidMap[layerName] = UuidUtils.generate();
             }
           });
@@ -91,8 +91,9 @@ module.exports = {
           }
           Fs.writeFileSync(prefabPath, JSON.stringify(prefabJson, null, 2));
 
-          // 步骤7: 刷新 AssetDB 让编辑器导入 Prefab
-          const prefabDbUrl = `db://assets/${Path.relative(outputPath, prefabDir).split(Path.sep).join('/')}`;
+          // 步骤7: 刷新 prefab 所在目录让编辑器导入
+          const prefabRelPath = Path.relative(outputPath, prefabDir).split(Path.sep).join('/');
+          const prefabDbUrl = `db://assets/${prefabRelPath}`;
           Editor.assetdb.refresh(prefabDbUrl, () => {
             Editor.success(`[psd-to-prefab] ✅ 转换完成! 共 ${exportedAssets.count} 个图层`);
             event.reply(null, {

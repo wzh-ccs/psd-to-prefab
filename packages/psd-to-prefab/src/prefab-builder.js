@@ -2,301 +2,182 @@
 
 const UuidUtils = require('./uuid-utils');
 const CoordinateConverter = require('./coordinate-converter');
-const LayerProcessor = require('./layer-processor');
 
 /**
  * Cocos Creator 2.4.x Prefab JSON 构建器
  *
- * Prefab 文件格式是一个 JSON 数组，包含：
- *   [0] cc.Prefab - Prefab 元信息
- *   [1] cc.Node - 根节点
- *   [2...] 子节点和组件（按深度优先顺序排列）
+ * 严格按照 Cocos Creator 2.4.11 的真实 Prefab 序列化格式生成 JSON。
+ * 参考格式来自编辑器导出的真实 .prefab 文件。
  *
- * 序列化顺序规则：
- *   1. cc.Prefab（数组第一个元素）
- *   2. cc.Node（根节点）
- *   3. 递归：对于每个节点，先序列化其子节点，再序列化其组件
- *   4. 每个节点的结束标志是 cc.PrefabInfo
+ * _trs 数组格式（10个元素）：
+ *   [x, y, z, qx, qy, qz, qw, sx, sy, sz]
+ *   位置(3) + 旋转四元数(4) + 缩放(3)
  */
 class PrefabBuilder {
 
-  /**
-   * 构建完整的 Prefab JSON
-   *
-   * @param {object} psdTree - 解析后的 PSD 树
-   * @param {object} uuidMap - 图层名 → SpriteFrame UUID 的映射
-   * @param {object} options - 构建选项
-   * @returns {Array} Prefab JSON 数组
-   */
   static build(psdTree, uuidMap, options = {}) {
     const docSize = CoordinateConverter.getDocumentSize(psdTree);
-    this._idCounter = 0;
     this._prefabData = [];
 
-    // 1. 构建 cc.Prefab 对象（索引 0）
-    const prefabObj = this._buildPrefabRoot(options.prefabName || 'PsdPrefab');
-    prefabObj._id = String(this._nextId());
+    // [0] cc.Prefab
+    const prefabObj = {
+      "__type__": "cc.Prefab",
+      "_name": options.prefabName || 'PsdPrefab',
+      "_objFlags": 0,
+      "_native": "",
+      "data": { "__id__": 1 },
+      "optimizationPolicy": 0,
+      "asyncLoadAssets": false,
+      "readonly": false
+    };
     this._prefabData.push(prefabObj);
-    const prefabId = parseInt(prefabObj._id);
 
-    // 2. 构建根节点（索引 1）
-    const rootNode = this._buildRootNode(psdTree.root, docSize, options);
-    rootNode._id = String(this._nextId());
+    // [1] 根节点 cc.Node
+    const rootCoords = CoordinateConverter.convertLayer(
+      psdTree.root, docSize.height, null, options
+    );
+    const rootNode = this._buildNode(psdTree.root.name || 'Root', rootCoords, null, options);
     this._prefabData.push(rootNode);
-    const rootNodeId = parseInt(rootNode._id);
+    const rootNodeIndex = 1;
 
-    // 3. 递归构建子节点树
+    // 递归构建子节点
     if (psdTree.root.children && psdTree.root.children.length > 0) {
-      this._buildChildNodes(
-        psdTree.root.children,
-        rootNodeId,
-        docSize,
-        psdTree.root,  // 父图层数据（用于相对坐标计算）
-        uuidMap,
-        options
-      );
+      this._buildChildren(psdTree.root.children, rootNodeIndex, docSize, psdTree.root, uuidMap, options);
     }
 
-    // 4. 构建根节点的组件
-    // 根节点通常不需要 Sprite 组件（除非根图层本身是图像图层）
+    // 根节点的组件（仅当根节点本身是图层时）
     if (psdTree.root.type === 'layer') {
-      const spriteFrameUuid = uuidMap[psdTree.root.name];
-      if (spriteFrameUuid) {
-        const spriteComp = this._buildSpriteComponent(
-          rootNodeId,
-          spriteFrameUuid,
-          options
-        );
-        spriteComp._id = String(this._nextId());
-        this._prefabData.push(spriteComp);
+      const sfUuid = uuidMap[psdTree.root.name];
+      if (sfUuid) {
+        this._prefabData.push(this._buildSprite(rootNodeIndex, sfUuid));
       }
     }
 
-    // 5. 构建根节点的 PrefabInfo（节点结束标志）
-    const rootPrefabInfo = this._buildPrefabInfo(rootNodeId, prefabId);
-    rootPrefabInfo._id = String(this._nextId());
-    this._prefabData.push(rootPrefabInfo);
+    // 根节点的 PrefabInfo
+    this._prefabData.push(this._buildPrefabInfo(rootNodeIndex));
 
-    // 6. 后处理：建立正确的 __id__ 引用
-    return this._postProcess(prefabId, rootNodeId);
+    // 后处理：建立 _children 和 _components 引用
+    this._linkReferences();
+
+    return this._prefabData;
   }
 
   /**
-   * 构建 cc.Prefab 对象
+   * 递归构建子节点
    */
-  static _buildPrefabRoot(name) {
-    return {
-      "__type__": "cc.Prefab",
+  static _buildChildren(children, parentIndex, docSize, parentLayer, uuidMap, options) {
+    for (const child of children) {
+      if (options.skipHidden && !child.visible) continue;
+
+      const coords = CoordinateConverter.convertLayer(
+        child, docSize.height, parentLayer, options
+      );
+
+      // 创建节点
+      const node = this._buildNode(child.name || 'Layer', coords, parentIndex, options);
+      this._prefabData.push(node);
+      const nodeIndex = this._prefabData.length - 1;
+
+      // 递归处理子节点
+      if (child.children && child.children.length > 0) {
+        this._buildChildren(child.children, nodeIndex, docSize, child, uuidMap, options);
+      }
+
+      // 添加组件
+      if (child.type === 'layer') {
+        const sfUuid = uuidMap[child.name];
+        if (sfUuid) {
+          this._prefabData.push(this._buildSprite(nodeIndex, sfUuid));
+        }
+      }
+
+      // 文本图层
+      if (child.text && child.text.value) {
+        this._prefabData.push(this._buildLabel(nodeIndex, child));
+      }
+
+      // PrefabInfo（节点结束标志）
+      this._prefabData.push(this._buildPrefabInfo(nodeIndex));
+    }
+  }
+
+  /**
+   * 构建 cc.Node（严格按照 2.4.11 格式）
+   */
+  static _buildNode(name, coords, parentIndex, options) {
+    const x = coords.x;
+    const y = coords.y;
+    const opacity = options.preserveOpacity ? 255 : 255;
+
+    const node = {
+      "__type__": "cc.Node",
       "_name": name,
       "_objFlags": 0,
-      "_native": "",
-      "data": null,  // 将在后处理中设置 __id__
-      "optimizationPolicy": 0,
-      "asyncLoadAssets": false,
-      "readonly": false,
-      "_id": "0"
-    };
-  }
-
-  /**
-   * 构建根节点
-   */
-  static _buildRootNode(rootLayer, docSize, options) {
-    const coords = CoordinateConverter.convertLayer(
-      rootLayer, docSize.height, null, options
-    );
-
-    return {
-      "__type__": "cc.Node",
-      "_name": rootLayer.name || "Root",
-      "_objFlags": 0,
-      "_parent": null,
-      "_children": [],       // 将在后处理中填充
+      "_parent": parentIndex !== null ? { "__id__": parentIndex } : null,
+      "_children": [],
       "_active": true,
-      "_components": [],     // 将在后处理中填充
-      "_prefab": null,       // 将在后处理中设置
-      "_lpos": {
-        "__type__": "cc.Vec2",
-        "x": coords.x,
-        "y": coords.y
-      },
-      "_lrot": {
-        "__type__": "cc.Vec2",
-        "x": 0,
-        "y": 0
-      },
-      "_lscale": {
-        "__type__": "cc.Vec2",
-        "x": 1,
-        "y": 1
-      },
-      "_anchorPoint": {
-        "__type__": "cc.Vec2",
-        "x": coords.anchorPoint.x,
-        "y": coords.anchorPoint.y
-      },
-      "_contentSize": {
-        "__type__": "cc.Size",
-        "width": coords.contentSize.width,
-        "height": coords.contentSize.height
-      },
-      "_opacity": Math.round((rootLayer.opacity || 1) * 255),
+      "_components": [],
+      "_prefab": null, // 后处理填充
+      "_opacity": opacity,
       "_color": {
         "__type__": "cc.Color",
         "r": 255,
         "g": 255,
         "b": 255,
         "a": 255
-      },
-      "_cascadeOpacityEnabled": true,
-      "_is3DNode": false,
-      "_groupIndex": 0,
-      "_trs": {
-        "__type__": "TypedArray",
-        "ctor": "Float64Array",
-        "array": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-      },
-      "_id": ""
-    };
-  }
-
-  /**
-   * 递归构建子节点
-   * 深度优先遍历：先序列化子节点，再序列化组件
-   */
-  static _buildChildNodes(children, parentId, docSize, parentLayer, uuidMap, options) {
-    for (const child of children) {
-      // 跳过不可见图层（如果配置了）
-      if (options.skipHidden && !child.visible) continue;
-
-      const childCoords = CoordinateConverter.convertLayer(
-        child, docSize.height, parentLayer, options
-      );
-
-      const nodeObj = this._buildNodeObject(child, childCoords, parentId, options);
-      nodeObj._id = String(this._nextId());
-      this._prefabData.push(nodeObj);
-      const nodeId = parseInt(nodeObj._id);
-
-      // 先递归处理子节点（深度优先）
-      if (child.children && child.children.length > 0) {
-        this._buildChildNodes(
-          child.children,
-          nodeId,
-          docSize,
-          child,
-          uuidMap,
-          options
-        );
-      }
-
-      // 再添加组件
-      // 如果是图层类型（非组），添加 Sprite 组件
-      if (child.type === 'layer') {
-        const spriteFrameUuid = uuidMap[child.name];
-        if (spriteFrameUuid) {
-          const spriteComp = this._buildSpriteComponent(
-            nodeId, spriteFrameUuid, options
-          );
-          spriteComp._id = String(this._nextId());
-          this._prefabData.push(spriteComp);
-        }
-      }
-
-      // 处理文本图层：添加 Label 组件
-      if (child.text && child.text.value) {
-        const labelComp = this._buildLabelComponent(nodeId, child, options);
-        labelComp._id = String(this._nextId());
-        this._prefabData.push(labelComp);
-      }
-
-      // 节点结束标志：PrefabInfo
-      const prefabInfo = this._buildPrefabInfo(nodeId, 0);
-      prefabInfo._id = String(this._nextId());
-      this._prefabData.push(prefabInfo);
-    }
-  }
-
-  /**
-   * 构建节点对象
-   */
-  static _buildNodeObject(layer, coords, parentId, options) {
-    return {
-      "__type__": "cc.Node",
-      "_name": layer.name || "Layer",
-      "_objFlags": 0,
-      "_parent": { "__id__": parentId },
-      "_children": [],
-      "_active": layer.visible,
-      "_components": [],
-      "_prefab": { "__id__": 0 },  // 将在后处理中修正
-      "_lpos": {
-        "__type__": "cc.Vec2",
-        "x": coords.x,
-        "y": coords.y
-      },
-      "_lrot": {
-        "__type__": "cc.Vec2",
-        "x": 0,
-        "y": 0
-      },
-      "_lscale": {
-        "__type__": "cc.Vec2",
-        "x": 1,
-        "y": 1
-      },
-      "_anchorPoint": {
-        "__type__": "cc.Vec2",
-        "x": coords.anchorPoint.x,
-        "y": coords.anchorPoint.y
       },
       "_contentSize": {
         "__type__": "cc.Size",
         "width": options.autoSize ? coords.contentSize.width : 0,
         "height": options.autoSize ? coords.contentSize.height : 0
       },
-      "_opacity": options.preserveOpacity
-        ? Math.round((layer.opacity || 1) * 255)
-        : 255,
-      "_color": {
-        "__type__": "cc.Color",
-        "r": 255,
-        "g": 255,
-        "b": 255,
-        "a": 255
+      "_anchorPoint": {
+        "__type__": "cc.Vec2",
+        "x": coords.anchorPoint.x,
+        "y": coords.anchorPoint.y
       },
-      "_cascadeOpacityEnabled": true,
-      "_is3DNode": false,
-      "_groupIndex": 0,
       "_trs": {
         "__type__": "TypedArray",
         "ctor": "Float64Array",
-        "array": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+        "array": [x, y, 0, 0, 0, 0, 1, 1, 1, 1]
       },
+      "_eulerAngles": {
+        "__type__": "cc.Vec3",
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "_skewX": 0,
+      "_skewY": 0,
+      "_is3DNode": false,
+      "_groupIndex": 0,
+      "groupIndex": 0,
       "_id": ""
     };
+
+    return node;
   }
 
   /**
    * 构建 cc.Sprite 组件
    */
-  static _buildSpriteComponent(nodeId, spriteFrameUuid, options) {
+  static _buildSprite(nodeIndex, spriteFrameUuid) {
     return {
       "__type__": "cc.Sprite",
       "_name": "",
       "_objFlags": 0,
-      "node": { "__id__": nodeId },
+      "node": { "__id__": nodeIndex },
       "_enabled": true,
       "_materials": [{
-        "__uuid__": UuidUtils.getBuiltinUuids().spriteMaterial
+        "__uuid__": "eca5d2f2-8ef6-41c2-bbe6-f9c79d09c432"
       }],
-      "_srcBlendFactor": 2,    // SRC_ALPHA
-      "_dstBlendFactor": 65026, // ONE_MINUS_SRC_ALPHA
+      "_srcBlendFactor": 770,
+      "_dstBlendFactor": 771,
       "_spriteFrame": {
         "__uuid__": spriteFrameUuid
       },
-      "_type": 0,        // SIMPLE
-      "_sizeMode": 0,    // CUSTOM (0) 或 TRIMMED (1)
+      "_type": 0,
+      "_sizeMode": 0,
       "_fillType": 0,
       "_fillCenter": {
         "__type__": "cc.Vec2",
@@ -313,168 +194,111 @@ class PrefabBuilder {
   }
 
   /**
-   * 构建 cc.Label 组件（用于文本图层）
+   * 构建 cc.Label 组件
    */
-  static _buildLabelComponent(nodeId, layer, options) {
+  static _buildLabel(nodeIndex, layer) {
     const textData = layer.text;
     const fontSizes = textData.font ? (textData.font.sizes || [24]) : [24];
-    const fontColors = textData.font
-      ? (textData.font.colors || [[255, 255, 255, 255]])
-      : [[255, 255, 255, 255]];
     const fontName = textData.font ? textData.font.name : 'Arial';
+    const fontSize = fontSizes[0] || 24;
 
     return {
       "__type__": "cc.Label",
       "_name": "",
       "_objFlags": 0,
-      "node": { "__id__": nodeId },
+      "node": { "__id__": nodeIndex },
       "_enabled": true,
       "_materials": [{
-        "__uuid__": UuidUtils.getBuiltinUuids().spriteMaterial
+        "__uuid__": "eca5d2f2-8ef6-41c2-bbe6-f9c79d09c432"
       }],
-      "_srcBlendFactor": 2,
-      "_dstBlendFactor": 65026,
+      "_srcBlendFactor": 770,
+      "_dstBlendFactor": 771,
       "_string": textData.value || '',
-      "_fontSize": fontSizes[0] || 24,
-      "_lineHeight": (fontSizes[0] || 24) * 1.2,
-      "_enableWrapText": true,
       "_N$string": textData.value || '',
-      "_N$fontSize": fontSizes[0] || 24,
-      "_N$lineHeight": (fontSizes[0] || 24) * 1.2,
+      "_fontSize": fontSize,
+      "_N$fontSize": fontSize,
+      "_lineHeight": Math.round(fontSize * 1.2),
+      "_N$lineHeight": Math.round(fontSize * 1.2),
+      "_enableWrapText": true,
+      "_N$enableWrapText": true,
       "_isSystemFontUsed": true,
+      "_N$isSystemFontUsed": true,
       "_spacingX": 0,
-      "_N$horizontalAlign": 1,  // Center
-      "_N$verticalAlign": 1,    // Center
+      "_N$spacingX": 0,
+      "_N$horizontalAlign": 1,
+      "_N$verticalAlign": 1,
       "_N$fontFamily": fontName,
-      "_N$overflow": 0,         // NONE
+      "_N$overflow": 0,
       "_id": ""
     };
   }
 
   /**
-   * 构建 cc.PrefabInfo（节点结束标志）
+   * 构建 cc.PrefabInfo（严格按照 2.4.11 格式）
    */
-  static _buildPrefabInfo(nodeId, rootId) {
+  static _buildPrefabInfo(nodeIndex) {
     return {
       "__type__": "cc.PrefabInfo",
-      "root": { "__id__": rootId },
-      "asset": { "__id__": 0 },
-      "fileId": UuidUtils.generate(),
-      "targetOverrides": null
+      "root": { "__id__": 1 },  // 指向根节点
+      "asset": { "__id__": 0 }, // 指向 cc.Prefab
+      "fileId": UuidUtils.generateShortId(),
+      "sync": false
     };
   }
 
   /**
-   * 后处理：修正所有 __id__ 引用和 _children/_components 数组
-   *
-   * 关键：在 _buildChildNodes 中，__id__ 是临时 ID（连续自增数字）。
-   * 但在 _postProcess 中，_id 被改为数组实际索引（字符串）。
-   * 需要建立一个映射：临时ID → 最终数组索引。
+   * 后处理：建立 _children、_components、_prefab 引用
    */
-  static _postProcess(prefabId, rootId) {
-    // 第一步：建立临时ID到最终数组索引的映射
-    // 临时ID存储在 _id 中（1, 2, 3, ...）
-    const tempIdToFinalIndex = {};
+  static _linkReferences() {
+    const childrenMap = {}; // nodeIndex → [childIndex, ...]
+    const componentsMap = {}; // nodeIndex → [compIndex, ...]
 
-    this._prefabData.forEach((item, index) => {
-      const tempId = parseInt(item._id) || 0;
-      tempIdToFinalIndex[tempId] = index;
-    });
-
-    // 第二步：为每个元素分配实际数组索引作为 _id
-    this._prefabData.forEach((item, index) => {
-      item._id = String(index);
-    });
-
-    // 第三步：使用映射修正所有 __id__ 引用
-    const remapId = (oldId) => {
-      const mapped = tempIdToFinalIndex[oldId];
-      return mapped !== undefined ? mapped : oldId;
-    };
-
-    // 修正 cc.Prefab.data 引用
-    this._prefabData[0].data = { "__id__": remapId(rootId) };
-
-    // 第四步：遍历所有元素，修正引用并收集节点关系
-    const nodeMap = {};  // 最终索引 → 子节点最终索引列表
-    const compMap = {};  // 最终索引 → 组件最终索引列表
-
-    for (let i = 0; i < this._prefabData.length; i++) {
+    // 收集关系
+    for (let i = 1; i < this._prefabData.length; i++) {
       const item = this._prefabData[i];
 
       if (item.__type__ === 'cc.Node') {
-        const nid = i;
-        nodeMap[nid] = nodeMap[nid] || [];
-
-        // 修正 _parent.__id__
+        // 收集父→子关系
         if (item._parent && item._parent.__id__ !== undefined) {
-          const oldPid = item._parent.__id__;
-          const newPid = remapId(oldPid);
-          item._parent = { "__id__": newPid };
-          if (!nodeMap[newPid]) nodeMap[newPid] = [];
-          nodeMap[newPid].push(nid);
+          const pid = item._parent.__id__;
+          if (!childrenMap[pid]) childrenMap[pid] = [];
+          childrenMap[pid].push(i);
         }
       }
 
       if (item.__type__ === 'cc.Sprite' || item.__type__ === 'cc.Label') {
+        // 收集节点→组件关系
         if (item.node && item.node.__id__ !== undefined) {
-          const oldNid = item.node.__id__;
-          const newNid = remapId(oldNid);
-          item.node = { "__id__": newNid };
-          if (!compMap[newNid]) compMap[newNid] = [];
-          compMap[newNid].push(i);
-        }
-      }
-
-      // 修正 PrefabInfo 中的 root 引用
-      if (item.__type__ === 'cc.PrefabInfo') {
-        if (item.root && item.root.__id__ !== undefined) {
-          item.root = { "__id__": remapId(item.root.__id__) };
+          const nid = item.node.__id__;
+          if (!componentsMap[nid]) componentsMap[nid] = [];
+          componentsMap[nid].push(i);
         }
       }
     }
 
-    // 第五步：填充 _children 和 _components
+    // 填充 _children 和 _components
     for (let i = 0; i < this._prefabData.length; i++) {
       const item = this._prefabData[i];
-
       if (item.__type__ === 'cc.Node') {
-        item._children = (nodeMap[i] || []).map(id => ({ "__id__": id }));
-        item._components = (compMap[i] || []).map(id => ({ "__id__": id }));
+        item._children = (childrenMap[i] || []).map(id => ({ "__id__": id }));
+        item._components = (componentsMap[i] || []).map(id => ({ "__id__": id }));
       }
     }
 
-    // 第六步：修正每个节点的 _prefab 引用，指向其对应的 PrefabInfo
+    // 填充 _prefab（每个节点指向它对应的 PrefabInfo）
+    // PrefabInfo 紧跟在节点的所有子节点和组件之后
     for (let i = 0; i < this._prefabData.length; i++) {
       const item = this._prefabData[i];
-
       if (item.__type__ === 'cc.Node') {
-        // PrefabInfo 是节点子树中最后一个 __type__ === 'cc.PrefabInfo' 的元素
-        const prefabInfoIdx = this._findPrefabInfoForNode(i);
-        if (prefabInfoIdx >= 0) {
-          item._prefab = { "__id__": prefabInfoIdx };
+        // 向后查找最近的 PrefabInfo
+        for (let j = i + 1; j < this._prefabData.length; j++) {
+          if (this._prefabData[j].__type__ === 'cc.PrefabInfo') {
+            item._prefab = { "__id__": j };
+            break;
+          }
         }
       }
     }
-
-    return this._prefabData;
-  }
-
-  /**
-   * 查找节点对应的 PrefabInfo 在数组中的索引
-   */
-  static _findPrefabInfoForNode(nodeIdx) {
-    // 深度优先遍历：PrefabInfo 是节点子树中最后一个 __type__ === 'cc.PrefabInfo' 的元素
-    for (let i = this._prefabData.length - 1; i > nodeIdx; i--) {
-      if (this._prefabData[i].__type__ === 'cc.PrefabInfo') {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  static _nextId() {
-    return ++this._idCounter;
   }
 }
 
