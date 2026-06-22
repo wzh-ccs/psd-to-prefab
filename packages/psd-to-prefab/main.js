@@ -65,33 +65,41 @@ module.exports = {
           }
 
           // 用 layerNames（PSD图层名）作为 key，和 prefab-builder 匹配
+          // 直接读 PNG 的 .meta 文件获取 SpriteFrame 子资源的压缩 UUID
           exportedAssets.layerNames.forEach((layerName, index) => {
-            const fileName = exportedAssets.fileNames[index];
-            const textureUrl = `${texturesDbUrl}/${fileName}`;
-            const textureUuid = Editor.assetdb.urlToUuid(textureUrl);
+            const filePath = exportedAssets.filePaths[index];
+            const metaPath = filePath + '.meta';
+            let sfUuid = null;
 
-            if (textureUuid) {
-              // 查询 SpriteFrame 子资源的 UUID
-              // Cocos Creator 2.4.x 中，PNG 导入后生成 Texture2D(主) + SpriteFrame(子)
-              // SpriteFrame 子资源的 URL 格式是 textureUrl + '/spriteFrame' 
-              // 或者通过 assetInfo 获取
-              let sfUuid = textureUuid;
-              try {
-                const info = Editor.assetdb.assetInfo(textureUrl);
-                if (info && info.subAssets) {
-                  // 找到 cc.SpriteFrame 类型的子资源
-                  for (const key in info.subAssets) {
-                    const sub = info.subAssets[key];
-                    if (sub.type === 'sprite-frame' || sub.type === 'cc.SpriteFrame') {
-                      sfUuid = sub.uuid;
-                      break;
-                    }
+            try {
+              if (Fs.existsSync(metaPath)) {
+                const metaContent = JSON.parse(Fs.readFileSync(metaPath, 'utf-8'));
+                // meta 文件中有 subMetas，里面包含 SpriteFrame 的 UUID
+                if (metaContent.subMetas) {
+                  const keys = Object.keys(metaContent.subMetas);
+                  if (keys.length > 0) {
+                    sfUuid = metaContent.subMetas[keys[0]].uuid;
                   }
                 }
-              } catch (e) {
-                // 如果查不到子资源，用纹理 UUID（配合 __expectedType__ 也能工作）
+                // 如果没有 subMetas，直接用顶层 uuid
+                if (!sfUuid && metaContent.uuid) {
+                  sfUuid = metaContent.uuid;
+                }
               }
+            } catch (e) {
+              Editor.warn(`[psd-to-prefab] 读取 meta 失败: ${layerName} - ${e.message}`);
+            }
 
+            // 如果 meta 文件没读到，尝试用 assetdb API
+            if (!sfUuid) {
+              const fileName = exportedAssets.fileNames[index];
+              const textureUrl = `${texturesDbUrl}/${fileName}`;
+              try {
+                sfUuid = Editor.assetdb.urlToUuid(textureUrl);
+              } catch (e) {}
+            }
+
+            if (sfUuid) {
               uuidMap[layerName] = sfUuid;
               Editor.log(`[psd-to-prefab] ${layerName} → ${sfUuid}`);
             } else {
