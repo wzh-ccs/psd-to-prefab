@@ -1,0 +1,31 @@
+🔗 PSD转Prefab 插件 - Python安装脚本（Mac原生支持）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ 链接有效期约60分钟
+
+📥 复制下面这行到 Mac 浏览器下载 install.py：
+
+https://smhwb-gz-002.data-tencentsmh.com/smh2mf8nq7i9cemv/e7c1a908268fe481000000000000000014395e4b0484cdb3000654865f4d1356.py?response-content-disposition=attachment%3B+filename%2A%3DUTF-8%27%27install.py&smh-space=space3ivl29jxhc41t&x-cos-security-token=gc2f0CBsoRdMA5lIiYRyCxWK9oVR4TTa162d54a06e0ff17578f540329a63f6525uLoqzlO_pbobehGoT13xRdtEyRwp9EA33mHvDznindY5GbwH9L_1eK7veho6m7wy6ycF8kaMrbJLf3kCYZ7aQdGiaaNLcyh2fJE134rfQB_kJOOyV8IgsMO7AerbL6xYFRSv-Y0bwfWCMrVFqvgrNo76-0jeRiqHEKuLqFsMdNAD-tWleWV4tcgNR7pDKJuSVvriAtAa6NKeqWUqs0CoTlWlHOxUwiJ3ri3cOraX5Cg2tG8POub6PWbTLKZXzJNosOUVCytLVPXFC4vpwOExHxJgG0Rxrlz9kgWpgR4CH_4yXKCfHAC1JIuCU8ypwdjLyDODpqsU-YV-QknaVRzgrQHyqtruDjD73p6BYREnspicFA9XsTTtKksSLPcEYQU4mZAYOOHDun5eLPUXiGNp7V3auM44Ok6GB2i3YTUyMzeVVFSGRh8S7_DzHjKG6F-bS1VHMMgOBptBYx6aadgVrpgLftPLZwcLuJqca3FSLpa1Z5Op1FiI0IwLGI72LLPu5yYvmpw15a_pAGfvgTCNkxS-Xt_TZNv6ji2nAcj3C-n0mMw6RwlgQRJH3xpJlKED3wfNS7N4WkBEp7_k_H0EVeo363JEE9uu33TfZPC-0O0NoEvtwuk5Cs5y_CgJwIy61gfi1CpColzh-0Bf1Ur8zsmFY5A-PWm0zKXEWecE8EDzKkPFMx8LLdV6_x3PxDjh2TZfArsyN5qVaunNlGA0kYRTzfPJAeijE8WE3kf0KEzJrYuFxWizHLU0oyzNfWQiElYo1ifjipC4igAtVFSAyLcchbfOKDBQhnsc1fLZxcKsiv5zyPN_XxHmivaXU7DsnKuIvqzY2jzsQqVz0XXwnhA7xNl96nf4-CELMf2yFGfFgpwOeEchWBngfUbf_zT7xtm2dBb2KX35Hs8ZQ0gz1dBv1yoGBTF5nPMf6LLaihiY2v7q1WFe7MRi-gfoRJ2&q-sign-algorithm=sha1&q-ak=AKID5rTo2q_Qd9QNwxYutQLSlvjQsHUF9pME1V3bJs9Vzg6EUIP5wNBrTDKEIw5Vll9V&q-sign-time=1781785987%3B1781793187&q-key-time=1781785987%3B1781793187&q-header-list=host&q-url-param-list=response-content-disposition%3Bsmh-space%3Bx-cos-security-token&q-signature=ce2b735f07907899ede08d16a9e73bfe5d6620a1
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 Mac 上操作（超简单，3步）：
+
+  1. 复制上面链接到浏览器 → 下载 install.py
+     文件会保存到 ~/Downloads/install.py
+
+  2. 打开终端，执行：
+     cd ~/Downloads
+     python3 install.py
+
+  3. 脚本自动在 ~/Downloads/ 下生成 packages/psd-to-prefab/
+     包含全部12个源文件！
+
+  然后：
+     cp -r ~/Downloads/packages/psd-to-prefab 你的Cocos项目/packages/
+     cd 你的Cocos项目/packages/psd-to-prefab
+     npm install
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Python 是 Mac 自带的，不需要安装任何东西
+✅ 已验证：12个文件全部正确生成

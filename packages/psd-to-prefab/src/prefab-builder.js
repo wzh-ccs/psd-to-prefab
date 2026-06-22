@@ -47,10 +47,8 @@ class PrefabBuilder {
 
     // 根节点的组件（仅当根节点本身是图层时）
     if (psdTree.root.type === 'layer') {
-      const sfUuid = uuidMap[psdTree.root.name];
-      if (sfUuid) {
-        this._prefabData.push(this._buildSprite(rootNodeIndex, sfUuid));
-      }
+      const sfUuid = uuidMap[psdTree.root.name] || null;
+      this._prefabData.push(this._buildSprite(rootNodeIndex, sfUuid));
     }
 
     // 根节点的 PrefabInfo
@@ -83,12 +81,10 @@ class PrefabBuilder {
         this._buildChildren(child.children, nodeIndex, docSize, child, uuidMap, options);
       }
 
-      // 添加组件
+      // 添加组件：像素图层都创建 Sprite（不绑定图片，用户手动拖）
       if (child.type === 'layer') {
-        const sfUuid = uuidMap[child.name];
-        if (sfUuid) {
-          this._prefabData.push(this._buildSprite(nodeIndex, sfUuid));
-        }
+        const sfUuid = uuidMap[child.name] || null;
+        this._prefabData.push(this._buildSprite(nodeIndex, sfUuid));
       }
 
       // 文本图层
@@ -174,9 +170,7 @@ class PrefabBuilder {
       }],
       "_srcBlendFactor": 770,
       "_dstBlendFactor": 771,
-      "_spriteFrame": {
-        "__uuid__": spriteFrameUuid
-      },
+      "_spriteFrame": spriteFrameUuid ? { "__uuid__": spriteFrameUuid } : null,
       "_type": 0,
       "_sizeMode": 0,
       "_fillType": 0,

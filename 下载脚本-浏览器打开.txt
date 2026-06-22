@@ -1,0 +1,23 @@
+🔗 PSD转Prefab 插件 - 一键安装脚本
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ 有效期：约60分钟
+
+📥 下载链接（复制到浏览器下载 .sh 文件）：
+
+https://smhwb-gz-002.data-tencentsmh.com/smh2mf8nq7i9cemv/e7c1a908268fe4810000000000000000c439efc766089a5000065486318c7e64.sh?response-content-disposition=attachment%3B+filename%2A%3DUTF-8%27%27psd-to-prefab-installer.sh&smh-space=space3ivl29jxhc41t&x-cos-security-token=gc2f0CBsoRdMA5lIiYRyCxWK9oVR4TTa7e7f761ebb8e64bbc60b0537a4f9225b5uLoqzlO_pbobehGoT13xYDG1tkAx1VCRkbqfhEJBedUraYVBoglysgoVj04AAMB3Tw0iEBHZcaEHeGg7Ads8DyQifruKlIPlk1mvpPk_F92thHoV-TL8VVyxzoUE5W4j0iRgq0VW64HR5VRJOIK2wJlZZNXzczHA1_mu2wuMalZ2Hus-8p78iLeHpkPTXsXo0wBqo1e53jRsTJC_QZSYqo5IBv7eT8Ne_r7QWZODz-lXDG8NUb2EPmst-Z12N0TjK9foH-262vm2XY97KO5TKBC4tQuoXv3Ey07ASz_I0Log9uWYaBfIWTRikV-6zunRiS3C45CM69oGWarjtfFckACD5SiSBsHLuqxIeyWBO1d5sg33ChKceaY3VHXQIlUEQXcHU8BsuPEI2gr61E-AXNf3ZYd7dZUvB0Lze9QUpHP-Ou8LBw8afKZ1I44L3OfDvk_Ij_OhomlPoOB_BMAlOf_hxUnp83dsmHIuOA_bII5C2cmE1UI1fkP-izYjQ2jtK640cIRAsHVF5WbO6uBCFuSLOPpVMF7yjNri34XlmeYaG0ft48iOn73haRktEMcWqdsAd-Wvmg3tCRlBBB2pCK7yg7E_fFQUIf3L8qIsmZ3493GjiwaF-8uotUKchfy6f57DnJLrnUmeo04qKPqfnI5PldrgATxsKYPdGCVLFArj3RLMGzh7lmTKaREDs8r-kb9nrCPzwoL2eDzlbf2HSq5DejBt16oj2eZzEeQkEb8miADmNe_Q62As_g4arHjvD9-S-NJCa0MRG0S8-MTyEC1CR7LyRGrqHER9hcU0JbvJTDuKSxPF-VBDo_2b3ljCYc7CO-yYonY4oku5ioPU3uAT5YSlrtVx4Bn1ObVBmCdH0Num1qkiVOeLFYRVjOmoiRFp081zcLXfTEykkEnIsFAXXo04vXWExLo5_jAqtXOUfaN8joEtZe5hROhIllg&q-sign-algorithm=sha1&q-ak=AKIDJ774KHOhd7zTJ-r9Ez1DWRYEC3puaSAihocN5af5y8-ft-Nn6fYijNsx1gVOMdoZ&q-sign-time=1781785217%3B1781792417&q-key-time=1781785217%3B1781792417&q-header-list=host&q-url-param-list=response-content-disposition%3Bsmh-space%3Bx-cos-security-token&q-signature=fdfaf675fe4f95a7e25d6de49e2ba8a5e028a755
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 Mac 使用方法：
+
+  1. 复制上面的链接到浏览器 → 下载 psd-to-prefab-installer.sh
+  2. 打开终端，进入下载目录：
+     cd ~/Downloads
+  3. 运行脚本：
+     chmod +x psd-to-prefab-installer.sh
+     ./psd-to-prefab-installer.sh
+  4. 脚本会在当前目录生成 packages/psd-to-prefab/ 完整目录
+  5. 把 packages/psd-to-prefab/ 复制到 Cocos Creator 项目的 packages/ 下
+  6. cd 你的项目/packages/psd-to-prefab && npm install
+  7. 重启 Cocos Creator

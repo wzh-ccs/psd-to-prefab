@@ -1,0 +1,20 @@
+🔗 PSD转Prefab插件 - Mac下载链接
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ 有效期：约60分钟（过期后告诉我，我重新生成）
+
+📦 文件：psd-to-prefab-plugin.tar.gz（16KB）
+    Mac双击即可解压
+
+📋 下载链接（复制整行到浏览器地址栏）：
+
+https://smhwb-gz-002.data-tencentsmh.com/smh2mf8nq7i9cemv/e7c1a908268fe481000000000000000069b933c49cad6e3700065486211aa564.gz?response-content-disposition=attachment%3B+filename%2A%3DUTF-8%27%27psd-to-prefab-plugin.tar.gz&smh-space=space3ivl29jxhc41t&x-cos-security-token=gc2f0CBsoRdMA5lIiYRyCxWK9oVR4TTa0c2770766dd6f14ebf56546d0b4339bc5uLoqzlO_pbobehGoT13xeTGCmEBx3r72jcC25sGni6dWlpBhkbe0wAl8jlGYdgK8qxiiQHrGFWaSHlyTdl72FW-ApoBccVvy7ZP8jWZrdvkxWB2pCawPTwfViBNGdhaE_vd9zZ9GDiiELI1JPqkBAoz3SgNCbIkFLg0IV2Wt7FRKShI0AzVCspcfdaeAHDcS4LI26peBc4WR_BNvTsuPhXWTn2z0NcrUXZG8QkDw8r10Vr5CTF5QbzoHd_SwVEIvmC5cm__ImkXksl2jBZ2M6HrRwoUMlFFJmYHvffOZNYI8SW-g7OMWw_eL9IYAKOObNw7rWLYw7k4FFpMBzY0ALeGsty-pmRsml_3TxFVsGgwIeXqxx_d8FEIXJUHiuLVnBAzC7WqjgpDRD3Raik5P8Iq2UAWvcQklWvgIX3JlypPjFvGejLtSDJkZl1QxLJBg3PsDi3fg0tJIfR1ff1j-NMsVnx3sYpDJDFKTFSqKu-m1yR6A1z697N5XzG5_zVKPGdNMosjuX1rcnhz6tzHR_UC9P0SHJfEfub6BHy4F-6qogRJpg-36Ur40sC3Fm_7dNr4-sOKBau964-gA38Y7oo2l9uqLFYhSBZnGacYuGHmhXz2BNFyqd1N0lPumehZn9RphRlhSpIKXTl7O804Z4NG5LtzwMuRG4I5t_kCfOij8o9e-h7RhvN1A5zDYHEgG0TY8bMFcJ19OXuIfCemzhvhpZKMlX3bx7But4fxXp1mM1bOZTyv04hs-r1XEDujy4bg-D-x3QqAWNXzLcCSVL8UWc9RMCDjAXPVxkYscgj9KOAhDrQnpzlDVV7v8Lj5XzklorqSfnaijoAwCqR0DTrGg8HXGgTKcdWG_oNar_SFp0Dwws27lkjxPGWP_NDdR6TOysZgxZDKzCc7LKNaW3tXZwai9Si3N0DxdIZ8W8LqW74D7P0q1fgfA2jmIGOq&q-sign-algorithm=sha1&q-ak=AKIDFrzvQtlO8KrUQac7mbdyFyHjVG46Dkmx5tcfwJgELneWGwBlqmE80XAzpOa6NRyD&q-sign-time=1781784942%3B1781792142&q-key-time=1781784942%3B1781792142&q-header-list=host&q-url-param-list=response-content-disposition%3Bsmh-space%3Bx-cos-security-token&q-signature=86ad42c278783ce2e07eb80c1f28dc487aa40851
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 使用步骤：
+  1. 复制上面的链接到浏览器 → 自动下载
+  2. Mac 双击 .tar.gz 文件解压
+  3. 把 packages/psd-to-prefab/ 复制到 Cocos Creator 项目的 packages/ 下
+  4. cd packages/psd-to-prefab && npm install
+  5. 重启 Cocos Creator

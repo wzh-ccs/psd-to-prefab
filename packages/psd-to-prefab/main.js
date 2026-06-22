@@ -49,75 +49,13 @@ module.exports = {
 
         // 步骤3: 刷新 AssetDB，让编辑器自动生成 .meta 文件
         Editor.log('[psd-to-prefab] 步骤3: 刷新资源数据库...');
-        // 直接刷新整个 assets 目录，避免路径计算错误
         Editor.assetdb.refresh('db://assets', () => {
-          Editor.log('[psd-to-prefab] 资源刷新完成，查询 UUID...');
+          Editor.log('[psd-to-prefab] 资源刷新完成');
 
-          // 步骤4: 查询每张图的 SpriteFrame UUID
-          const uuidMap = {};
-          // 构建 textures 目录的 db:// URL 用于查询 UUID
-          const assetsIndex = exportDir.indexOf('/assets/');
-          let texturesDbUrl;
-          if (assetsIndex >= 0) {
-            texturesDbUrl = 'db://' + exportDir.substring(assetsIndex + 1);
-          } else {
-            texturesDbUrl = 'db://assets/' + psdName + '/textures';
-          }
-
-          // 用 layerNames（PSD图层名）作为 key，和 prefab-builder 匹配
-          // 从 PNG 的 .meta 文件获取 UUID，然后压缩为 Cocos Creator 2.4.x 格式
-          exportedAssets.layerNames.forEach((layerName, index) => {
-            const filePath = exportedAssets.filePaths[index];
-            const metaPath = filePath + '.meta';
-            let rawUuid = null;
-
-            try {
-              if (Fs.existsSync(metaPath)) {
-                const metaContent = JSON.parse(Fs.readFileSync(metaPath, 'utf-8'));
-                // 优先从 subMetas 中获取 SpriteFrame 子资源 UUID
-                if (metaContent.subMetas) {
-                  const keys = Object.keys(metaContent.subMetas);
-                  if (keys.length > 0) {
-                    rawUuid = metaContent.subMetas[keys[0]].uuid;
-                  }
-                }
-                if (!rawUuid && metaContent.uuid) {
-                  rawUuid = metaContent.uuid;
-                }
-              }
-            } catch (e) {
-              Editor.warn(`[psd-to-prefab] 读取 meta 失败: ${layerName} - ${e.message}`);
-            }
-
-            // 回退到 assetdb API
-            if (!rawUuid) {
-              const fileName = exportedAssets.fileNames[index];
-              const textureUrl = `${texturesDbUrl}/${fileName}`;
-              try {
-                rawUuid = Editor.assetdb.urlToUuid(textureUrl);
-              } catch (e) {}
-            }
-
-            if (rawUuid) {
-              // 关键：将标准 UUID（36字符）压缩为 Cocos Creator 2.4.x 格式（22字符 base64）
-              let compressedUuid = rawUuid;
-              try {
-                if (Editor.Utils && Editor.Utils.UuidUtils) {
-                  compressedUuid = Editor.Utils.UuidUtils.compressUuid(rawUuid, true);
-                }
-              } catch (e) {
-                Editor.warn(`[psd-to-prefab] UUID 压缩失败: ${e.message}`);
-              }
-              uuidMap[layerName] = compressedUuid;
-              Editor.log(`[psd-to-prefab] ${layerName} → ${compressedUuid}`);
-            } else {
-              uuidMap[layerName] = UuidUtils.generate();
-              Editor.warn(`[psd-to-prefab] ${layerName} UUID 未找到，使用随机值`);
-            }
-          });
-
-          // 步骤5: 构建 Prefab JSON
+          // 步骤4: 构建 Prefab JSON
+          // Sprite 组件不绑定 UUID，用户手动拖图片上去
           Editor.log('[psd-to-prefab] 步骤4: 构建 Prefab JSON...');
+          const uuidMap = {}; // 空映射，Sprite 的 _spriteFrame 为 null
           const prefabJson = PrefabBuilder.build(psdTree, uuidMap, {
             psdWidth: psdTree.document.width,
             psdHeight: psdTree.document.height,
@@ -128,7 +66,7 @@ module.exports = {
             skipHidden: options.skipHiddenLayers || false
           });
 
-          // 步骤6: 保存 Prefab 文件（不写 .meta 文件！）
+          // 步骤5: 保存 Prefab 文件
           Editor.log('[psd-to-prefab] 步骤5: 保存 Prefab 文件...');
           const prefabPath = Path.join(outputPath, psdName, `${psdName}.prefab`);
           const prefabDir = Path.dirname(prefabPath);
@@ -137,9 +75,10 @@ module.exports = {
           }
           Fs.writeFileSync(prefabPath, JSON.stringify(prefabJson, null, 2));
 
-          // 步骤7: 刷新整个 assets 目录让编辑器导入 Prefab
+          // 步骤6: 刷新整个 assets 目录让编辑器导入 Prefab
           Editor.assetdb.refresh('db://assets', () => {
             Editor.success(`[psd-to-prefab] ✅ 转换完成! 共 ${exportedAssets.count} 个图层`);
+            Editor.log('[psd-to-prefab] 💡 Sprite 组件未绑定图片，请手动拖拽纹理到 Sprite 的 SpriteFrame 属性');
             event.reply(null, {
               success: true,
               prefabPath: prefabPath,

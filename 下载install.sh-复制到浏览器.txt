@@ -1,0 +1,40 @@
+🔗 PSD转Prefab 插件 - 一键安装（含全部12个文件）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ 链接有效期约60分钟
+
+📥 复制下面这行到浏览器下载 install.sh：
+
+https://smhwb-gz-002.data-tencentsmh.com/smh2mf8nq7i9cemv/e7c1a908268fe481000000000000000036da45b9e302a0f6000654864d48812b.sh?response-content-disposition=attachment%3B+filename%2A%3DUTF-8%27%27install.sh&smh-space=space3ivl29jxhc41t&x-cos-security-token=gc2f0CBsoRdMA5lIiYRyCxWK9oVR4TTa63de04448f48c9c7df85f481a597ea8d5uLoqzlO_pbobehGoT13xfz1yztx6c3zC07CKv7m7no6kqjxyRSbshPMCJ0OYgDYYdsMps5KCyEfGiX_gCAjiPNSiE9IggCTLfBOAb3ycR7PcA9VsV9YipI5JtEA0lyEsInp01uEOBRLfN8xzGAm-XpsPZLpKsfGyj9XGLwzDiBFAfkBrdYrLQjJhFvIibWUZGftc6ZKy3xfeaWxtqb_uRQBkI3qF-ekaIFpfKHK-MaL0s4K3mgUOoY34F0JcfpSl3srrNKdqtsrMHpCcF9z7NN93j7Zam_LGdNwCsBIsasROiq8s5zeeIPy21NGkpJL9TWNQdMNBz01GEdGrDwFXE-mG1HHaSQpXLiTmefGv7Wcl3PwAkKZchd6PARaUY5wjV64xu-dwwKAC5u95rYK8wntFPAiz3mQmsoa4UsObCymW0G4etyHsWJWhlrMSwmMSkSTyhdpDJq4XJiDFdfI1Rnk2YR7npHxSxEsNF3aIDdu55cNrPAsut7N2yBgsMb5pS4t6F-URdxQXUrlkn-bvXdiU2HsRwxR4kUA572rslkutnvVUbynV0T-_KRr33xQXFAXppiDKN66xI9D-opAZvOBNmpFVqkb0rGQE-_ffDcw_6ERuTF31xBMTBcV3hhViYjDRN4V3emQK-VLnWWkJbrRrsAYTKZhgW_VXa5bXaV8qSX0remO_CKhAiFhGGx2YVzriEWqb9UfJ4JfsS1Nlh2BO5zZYJGkHbt0ngAL1TfN8NKnv7eegoluwxNyOLBuLKBAeLaIy5ifdBJB6xTMOdnrwADAW3mrGQRGwMsxPBriFNS5XOyRwDJGtA3qK_oPsdcuBnuok3Ze3V5iHkYi5DDeZoxm2xFKBCEGNh7puxg2s1BnEaTdJm5bmflnova11tBqaZI4oSL21_DvyGl2gdw_PIcC1ccIRZnHRCYFus1YvvDIQqLFIqpUwCRVs3l4&q-sign-algorithm=sha1&q-ak=AKIDj2sFMjSMxtWC8aUcEiJdkf3eCdhDKvdEvetDEVZ3GwgYG7W0vItV_-xeZPoeyPj6&q-sign-time=1781785685%3B1781792885&q-key-time=1781785685%3B1781792885&q-header-list=host&q-url-param-list=response-content-disposition%3Bsmh-space%3Bx-cos-security-token&q-signature=9eed791e16c7996e4ab5e949850c34a4b43e4612
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 Mac 终端执行（3步搞定）：
+
+  1. 下载 install.sh 到 ~/Downloads/
+  
+  2. 打开终端，执行：
+     cd ~/Downloads
+     chmod +x install.sh
+     ./install.sh
+  
+  3. 脚本自动生成 packages/psd-to-prefab/ 目录（含12个文件）
+     然后复制到你的 Cocos Creator 项目：
+     cp -r ~/Downloads/packages/psd-to-prefab 你的Cocos项目/packages/
+     cd 你的Cocos项目/packages/psd-to-prefab
+     npm install
+
+✅ 包含的文件清单（12个）：
+  - package.json
+  - main.js
+  - panel/index.html
+  - panel/style.css
+  - panel/index.js
+  - src/psd-parser.js
+  - src/image-exporter.js
+  - src/coordinate-converter.js
+  - src/uuid-utils.js
+  - src/meta-builder.js
+  - src/layer-processor.js
+  - src/prefab-builder.js
