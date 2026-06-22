@@ -34,7 +34,7 @@ class PrefabBuilder {
 
     // [1] 根节点 cc.Node
     const rootCoords = CoordinateConverter.convertLayer(
-      psdTree.root, docSize.height, null, options
+      psdTree.root, docSize.height, docSize.width, null, options
     );
     const rootNode = this._buildNode(psdTree.root.name || 'Root', rootCoords, null, options);
     this._prefabData.push(rootNode);
@@ -45,12 +45,7 @@ class PrefabBuilder {
       this._buildChildren(psdTree.root.children, rootNodeIndex, docSize, psdTree.root, uuidMap, options);
     }
 
-    // 根节点的组件（仅当根节点本身是图层时）
-    if (psdTree.root.type === 'layer') {
-      const sfUuid = uuidMap[psdTree.root.name] || null;
-      this._prefabData.push(this._buildSprite(rootNodeIndex, sfUuid));
-    }
-
+    // 根节点是 PSD 文档根（group 类型），不创建任何组件
     // 根节点的 PrefabInfo
     this._prefabData.push(this._buildPrefabInfo(rootNodeIndex));
 
@@ -68,7 +63,7 @@ class PrefabBuilder {
       if (options.skipHidden && !child.visible) continue;
 
       const coords = CoordinateConverter.convertLayer(
-        child, docSize.height, parentLayer, options
+        child, docSize.height, docSize.width, parentLayer, options
       );
 
       // 创建节点
@@ -81,16 +76,16 @@ class PrefabBuilder {
         this._buildChildren(child.children, nodeIndex, docSize, child, uuidMap, options);
       }
 
-      // 添加组件：像素图层都创建 Sprite（不绑定图片，用户手动拖）
-      if (child.type === 'layer') {
+      // 添加组件（互斥：文本→Label，图片→Sprite，组→无组件）
+      if (child.text && child.text.value) {
+        // 文本图层 → 只创建 Label 组件
+        this._prefabData.push(this._buildLabel(nodeIndex, child));
+      } else if (child.type === 'layer') {
+        // 像素图层（按钮、背景、弹窗等）→ 只创建 Sprite 组件（不绑定图片，用户手动拖）
         const sfUuid = uuidMap[child.name] || null;
         this._prefabData.push(this._buildSprite(nodeIndex, sfUuid));
       }
-
-      // 文本图层
-      if (child.text && child.text.value) {
-        this._prefabData.push(this._buildLabel(nodeIndex, child));
-      }
+      // group 类型 → 不创建任何组件（仅作容器）
 
       // PrefabInfo（节点结束标志）
       this._prefabData.push(this._buildPrefabInfo(nodeIndex));
@@ -194,7 +189,9 @@ class PrefabBuilder {
   static _buildLabel(nodeIndex, layer) {
     const textData = layer.text;
     const fontSizes = textData.font ? (textData.font.sizes || [24]) : [24];
-    const fontName = textData.font ? textData.font.name : 'Arial';
+    // psd.js 用 font.names（数组），不是 font.name
+    const fontNames = textData.font ? (textData.font.names || []) : [];
+    const fontName = fontNames[0] || 'Arial';
     const fontSize = fontSizes[0] || 24;
 
     return {

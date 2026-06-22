@@ -3,30 +3,22 @@
 /**
  * PSD 坐标系统 → Cocos Creator 坐标系统转换
  *
- * PSD 坐标系:
- *   - 原点在左上角 (0, 0)
- *   - Y 轴向下为正
- *   - 位置由 left, top, right, bottom 定义
+ * PSD 坐标系: 原点左上角，Y 轴向下
+ * Cocos 坐标系: 原点左下角，Y 轴向上
  *
- * Cocos Creator 坐标系:
- *   - 原点在左下角 (0, 0) -- 或根据锚点而定
- *   - Y 轴向上为正
- *   - 位置由 x, y, anchorPoint 定义
- *   - 节点位置默认基于父节点坐标空间
+ * 当父节点锚点为 (0.5, 0.5) 时，子节点坐标是相对于父节点中心的偏移
+ * 当父节点锚点为 (0, 0) 时，子节点坐标是相对于父节点左下角的偏移
  */
 class CoordinateConverter {
 
   /**
-   * 将 PSD 图层坐标转换为 Cocos Creator 节点坐标
-   *
-   * @param {object} layer - PSD 图层数据 { left, top, width, height }
-   * @param {number} psdHeight - PSD 文档总高度（用于 Y 轴翻转）
-   * @param {object} parentLayer - 父图层数据（可选，用于相对坐标）
+   * @param {object} layer - PSD 图层 { left, top, width, height }
+   * @param {number} psdHeight - PSD 文档高度
+   * @param {number} psdWidth - PSD 文档宽度
+   * @param {object} parentLayer - 父图层数据（可选）
    * @param {object} options - 转换选项
-   * @param {boolean} options.centerAnchor - 是否使用中心锚点 (0.5, 0.5)
-   * @returns {object} { x, y, anchorPoint, contentSize }
    */
-  static convertLayer(layer, psdHeight, parentLayer = null, options = {}) {
+  static convertLayer(layer, psdHeight, psdWidth, parentLayer = null, options = {}) {
     const centerAnchor = options.centerAnchor !== false;
 
     const width = layer.width || (layer.right - layer.left) || 0;
@@ -36,32 +28,31 @@ class CoordinateConverter {
     let relativeLeft = layer.left || 0;
     let relativeTop = layer.top || 0;
 
+    // 父节点尺寸
+    let parentW, parentH;
     if (parentLayer) {
       relativeLeft -= (parentLayer.left || 0);
       relativeTop -= (parentLayer.top || 0);
+      parentW = parentLayer.width || psdWidth;
+      parentH = parentLayer.height || psdHeight;
+    } else {
+      parentW = psdWidth;
+      parentH = psdHeight;
     }
 
-    // Y 轴翻转：Cocos 的 Y 轴向上，PSD 的 Y 轴向下
-    const parentHeight = parentLayer
-      ? (parentLayer.height || (parentLayer.bottom - parentLayer.top) || psdHeight)
-      : psdHeight;
-
-    // 统一计算节点左下角在 Cocos 坐标系中的位置
-    // 不管锚点是什么，_trs 中的 x,y 都是节点锚点在父节点坐标系中的位置
-    // 当锚点为 (0,0) 时，x,y = 左下角位置
-    // 当锚点为 (0.5,0.5) 时，x,y = 左下角 + 半宽半高
-    const bottomY = parentHeight - relativeTop - height;
+    // Y 轴翻转：PSD top → Cocos bottom
+    const bottomY = parentH - relativeTop - height;
 
     if (centerAnchor) {
-      // 锚点居中：x,y = 左下角 + 半宽半高
+      // 锚点 (0.5, 0.5)：坐标 = 图层中心相对于父节点中心的偏移
       return {
-        x: relativeLeft + width / 2,
-        y: bottomY + height / 2,
+        x: relativeLeft + width / 2 - parentW / 2,
+        y: bottomY + height / 2 - parentH / 2,
         anchorPoint: { x: 0.5, y: 0.5 },
         contentSize: { width, height }
       };
     } else {
-      // 锚点左下角：x,y = 左下角
+      // 锚点 (0, 0)：坐标 = 图层左下角相对于父节点左下角
       return {
         x: relativeLeft,
         y: bottomY,
@@ -71,9 +62,6 @@ class CoordinateConverter {
     }
   }
 
-  /**
-   * 获取 PSD 文档尺寸
-   */
   static getDocumentSize(psdTree) {
     return {
       width: psdTree.document.width,

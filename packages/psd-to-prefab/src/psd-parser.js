@@ -32,14 +32,28 @@ class PsdParser {
    * 增强树结构，添加 PSD 文档级元数据和遍历辅助方法
    */
   static _enhanceTree(tree, psd) {
+    const docWidth = tree.document.width;
+    const docHeight = tree.document.height;
+    const root = this._processNode(tree, psd);
+
+    // psd.js 的 Root.export() 不含 left/top/width/height，需要补充
+    // 否则坐标转换时根节点尺寸为 0，导致所有子节点坐标错误
+    root.type = 'root';
+    root.left = 0;
+    root.top = 0;
+    root.right = docWidth;
+    root.bottom = docHeight;
+    root.width = docWidth;
+    root.height = docHeight;
+
     return {
       document: {
-        width: tree.document.width,
-        height: tree.document.height,
+        width: docWidth,
+        height: docHeight,
         resources: tree.document.resources || {}
       },
-      root: this._processNode(tree, psd),
-      _psd: psd  // 保留原始 psd 对象引用用于图像导出
+      root: root,
+      _psd: psd
     };
   }
 
