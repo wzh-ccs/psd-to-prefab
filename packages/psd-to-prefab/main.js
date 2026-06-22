@@ -68,10 +68,32 @@ module.exports = {
           exportedAssets.layerNames.forEach((layerName, index) => {
             const fileName = exportedAssets.fileNames[index];
             const textureUrl = `${texturesDbUrl}/${fileName}`;
-            const uuid = Editor.assetdb.urlToUuid(textureUrl);
-            if (uuid) {
-              uuidMap[layerName] = uuid;
-              Editor.log(`[psd-to-prefab] ${layerName} → ${uuid}`);
+            const textureUuid = Editor.assetdb.urlToUuid(textureUrl);
+
+            if (textureUuid) {
+              // 查询 SpriteFrame 子资源的 UUID
+              // Cocos Creator 2.4.x 中，PNG 导入后生成 Texture2D(主) + SpriteFrame(子)
+              // SpriteFrame 子资源的 URL 格式是 textureUrl + '/spriteFrame' 
+              // 或者通过 assetInfo 获取
+              let sfUuid = textureUuid;
+              try {
+                const info = Editor.assetdb.assetInfo(textureUrl);
+                if (info && info.subAssets) {
+                  // 找到 cc.SpriteFrame 类型的子资源
+                  for (const key in info.subAssets) {
+                    const sub = info.subAssets[key];
+                    if (sub.type === 'sprite-frame' || sub.type === 'cc.SpriteFrame') {
+                      sfUuid = sub.uuid;
+                      break;
+                    }
+                  }
+                }
+              } catch (e) {
+                // 如果查不到子资源，用纹理 UUID（配合 __expectedType__ 也能工作）
+              }
+
+              uuidMap[layerName] = sfUuid;
+              Editor.log(`[psd-to-prefab] ${layerName} → ${sfUuid}`);
             } else {
               uuidMap[layerName] = UuidUtils.generate();
               Editor.warn(`[psd-to-prefab] ${layerName} UUID 未找到，使用随机值`);

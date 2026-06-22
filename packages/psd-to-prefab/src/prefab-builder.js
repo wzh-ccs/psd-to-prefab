@@ -175,7 +175,8 @@ class PrefabBuilder {
       "_srcBlendFactor": 770,
       "_dstBlendFactor": 771,
       "_spriteFrame": {
-        "__uuid__": spriteFrameUuid
+        "__uuid__": spriteFrameUuid,
+        "__expectedType__": "cc.SpriteFrame"
       },
       "_type": 0,
       "_sizeMode": 0,
