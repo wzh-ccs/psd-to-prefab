@@ -1,0 +1,26 @@
+{
+  "name": "psd-to-prefab",
+  "version": "1.0.0",
+  "description": "将 PSD 文件自动转换为 Cocos Creator Prefab，保留图层层级结构并绑定 Sprite 组件",
+  "author": "Plugin Developer",
+  "main": "main.js",
+  "main-menu": {
+    "扩展/PSD转Prefab": {
+      "message": "psd-to-prefab:open",
+      "accelerator": "CmdOrCtrl+Shift+P"
+    }
+  },
+  "panel": {
+    "main": "panel/index.js",
+    "type": "dockable",
+    "title": "PSD转Prefab",
+    "width": 480,
+    "height": 650,
+    "min-width": 400,
+    "min-height": 500
+  },
+  "dependencies": {
+    "psd": "^3.4.0"
+  },
+  "devDependencies": {}
+}

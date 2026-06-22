@@ -1,0 +1,44 @@
+<div class="container">
+  <h2 class="title">PSD 转 Prefab</h2>
+
+  <div class="section">
+    <label class="label">PSD 文件路径</label>
+    <div class="file-picker">
+      <ui-input id="psd-path" class="input" placeholder="选择 .psd 文件..." readonly></ui-input>
+      <ui-button id="browse-psd" class="btn-browse">浏览</ui-button>
+    </div>
+    <div id="psd-info" class="info-text" style="display:none;">
+      <span>尺寸: <span id="psd-size"></span></span>
+      <span>图层数: <span id="psd-layers"></span></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="label">输出目录</label>
+    <div class="file-picker">
+      <ui-input id="output-path" class="input" placeholder="选择输出目录..." readonly></ui-input>
+      <ui-button id="browse-output" class="btn-browse">浏览</ui-button>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="label">转换选项</label>
+    <div class="options">
+      <ui-checkbox id="skip-hidden" checked>跳过隐藏图层</ui-checkbox>
+      <ui-checkbox id="auto-size">自动设置节点尺寸</ui-checkbox>
+      <ui-checkbox id="preserve-opacity">保留图层透明度</ui-checkbox>
+      <ui-checkbox id="center-anchor">锚点居中(0.5, 0.5)</ui-checkbox>
+    </div>
+  </div>
+
+  <div class="section">
+    <ui-button id="convert-btn" class="btn-convert" disabled>开始转换</ui-button>
+  </div>
+
+  <div class="section">
+    <div id="progress-bar" class="progress" style="display:none;">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <div id="status-msg" class="status-text"></div>
+  </div>
+</div>

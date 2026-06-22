@@ -1,0 +1,27 @@
+{
+  "engine": "cocos-creator-js",
+  "version": "2.4.7",
+  "setting": {
+    "platform": "web-desktop",
+    "group": {
+      "default": 0
+    },
+    "collisionGroups": [
+      {
+        "index": 0,
+        "name": "Default"
+      }
+    ],
+    "designResolution": {
+      "width": 960,
+      "height": 640,
+      "policy": 1
+    }
+  },
+  "packages": {
+    "psd-to-prefab": {
+      "name": "psd-to-prefab",
+      "version": "1.0.0"
+    }
+  }
+}
