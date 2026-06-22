@@ -19,13 +19,7 @@ class PsdParser {
   static parse(filePath, options = {}) {
     const psd = PSD.fromFile(filePath);
 
-    // 关键配置：启用图层图像数据解析
-    // 不启用此选项将无法导出单个图层图像
-    psd.setOptions({
-      layerImages: options.layerImages !== false,  // 默认 true
-      onlyVisibleLayers: options.onlyVisibleLayers || false
-    });
-
+    // psd.js 3.4.0 直接 parse() 即可解析所有数据（包括图层图像）
     psd.parse();
 
     const tree = psd.tree().export();

@@ -104,7 +104,14 @@ Editor.Panel.extend({
   _validatePsd(psdPath) {
     this.$statusMsg.innerText = '验证 PSD 文件中...';
 
-    Editor.Ipc.sendToMain('psd-to-prefab:validate-psd', psdPath, (result) => {
+    Editor.Ipc.sendToMain('psd-to-prefab:validate-psd', psdPath, (error, result) => {
+      if (error) {
+        this._psdValid = false;
+        this.$psdInfo.style.display = 'none';
+        this.$statusMsg.innerText = `PSD 无效: ${error.message || error}`;
+        this._updateConvertButton();
+        return;
+      }
       if (result && result.valid) {
         this._psdValid = true;
         this.$psdInfo.style.display = 'flex';
@@ -141,7 +148,13 @@ Editor.Panel.extend({
       }
     };
 
-    Editor.Ipc.sendToMain('psd-to-prefab:convert', params, (result) => {
+    Editor.Ipc.sendToMain('psd-to-prefab:convert', params, (error, result) => {
+      if (error) {
+        this.$statusMsg.innerText = `转换失败: ${error.message || error}`;
+        this.$convertBtn.disabled = false;
+        this.$progressBar.style.display = 'none';
+        return;
+      }
       if (result && result.success) {
         this.$statusMsg.innerText = `转换完成! 共 ${result.layerCount} 个图层\nPrefab: ${result.prefabPath}`;
       } else {

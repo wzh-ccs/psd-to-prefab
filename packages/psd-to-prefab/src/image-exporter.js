@@ -80,20 +80,26 @@ class ImageExporter {
 
   /**
    * 导出单个图层图像到文件
+   * psd.js 3.4.0 API:
+   *   - layer.image.toPng() 返回 pngjs PNG 对象
+   *   - 用 PNG.sync.write() 同步写入文件
    */
   static _exportLayerImage(node, psd, outputPath) {
-    // psd.js 在启用 layerImages 后，每个图层都有 image 属性
-    // 通过遍历 psd 树找到对应图层并调用其 image.toFile()
     const psdTree = psd.tree();
     const layerNode = this._findLayerNode(psdTree, node.name, node.left, node.top);
 
     if (layerNode && layerNode.layer && layerNode.layer.image) {
       try {
-        // 同步导出图层图像
-        layerNode.layer.image.toFileSync(outputPath);
+        // 用 toPng() 获取 PNG 对象
+        const png = layerNode.layer.image.toPng();
+        // 用 pngjs 的同步 API 写入文件
+        const { PNG } = require('pngjs');
+        const buffer = PNG.sync.write(png);
+        Fs.writeFileSync(outputPath, buffer);
         return;
       } catch (e) {
         // 导出失败，使用占位图
+        console.error('[psd-to-prefab] 图层导出失败:', e.message);
       }
     }
 
